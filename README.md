@@ -1,5 +1,7 @@
 # Storyboarding
 
+<p align="center"><b>English</b> | <a href="README.ko.md">한국어</a></p>
+
 https://github.com/user-attachments/assets/f2673cb3-9900-4ef4-b806-79c7837dc683
 
 <p align="center">
