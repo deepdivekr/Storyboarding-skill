@@ -1,8 +1,6 @@
 # Storyboarding
 
-<p align="center">
-  <img src="media/demo.gif" width="480" alt="Storyboard of agent-driver: requests typed in, pages observed, candidates scored against a gate, approved, executed and verified">
-</p>
+https://github.com/user-attachments/assets/f2673cb3-9900-4ef4-b806-79c7837dc683
 
 <p align="center">
   A Claude skill that turns a code repository into a looping motion graphic of how it works.<br>
