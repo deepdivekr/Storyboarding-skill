@@ -1,0 +1,48 @@
+{
+  "scene": "scene.js",
+  "meta": {
+    "name": "zod",
+    "tagline": ["TypeScript-first schema validation with static type inference.", "Write a schema once. Parse untrusted data into typed data or exact issues."],
+    "counterLabel": "",
+    "headerRight": "v4.6.5",
+    "footerLeft": "github.com/colinhacks/zod",
+    "footerRight": "example inputs, simulated",
+    "file": "order.ts",
+    "editorLabel": "your code",
+    "inputTitle": "request body",
+    "inputBadge": "untrusted",
+    "inputEmpty": "waiting for a request",
+    "resultTitle": "Order.safeParse(body)",
+    "resultEmpty": "nothing parsed yet",
+    "schema": [
+      "import * as z from \"zod\";",
+      "",
+      "const Order = z.object({",
+      "  item: z.string(),",
+      "  qty: z.number().int().positive(),",
+      "  pickup: z.iso.date(),",
+      "  note: z.string().max(80).optional(),",
+      "});",
+      "type Order = z.infer<typeof Order>;"
+    ],
+    "tiles": [
+      { "title": "z.infer<typeof Order>", "note": "static type, no extra code", "lines": ["{", "  item: string;", "  qty: number;", "  pickup: string;", "  note?: string;", "}"] },
+      { "title": "z.toJSONSchema(Order)", "note": "built-in conversion", "lines": ["{", "  \"type\": \"object\",", "  \"required\": [", "    \"item\", \"qty\", \"pickup\"", "  ]", "}"] },
+      { "title": "z.compile(Order)", "note": "median, 55-schema benchmark", "big": "2.4x", "sub": "faster parse on hot paths" }
+    ]
+  },
+  "shots": [
+    { "name": "schema", "kind": "schema", "sec": 8, "intro": 3.4, "tiles": [0] },
+    { "name": "valid", "kind": "parse", "sec": 9,
+      "input": ["{", "  \"item\": \"rye loaf\",", "  \"qty\": 2,", "  \"pickup\": \"2026-10-03\",", "  \"note\": \"sliced, please\"", "}"],
+      "checks": [ { "input": 1, "schema": 3, "ok": true }, { "input": 2, "schema": 4, "ok": true }, { "input": 3, "schema": 5, "ok": true }, { "input": 4, "schema": 6, "ok": true } ],
+      "result": { "ok": true, "pill": "success: true", "lines": ["result.data", "{", "  item: \"rye loaf\",", "  qty: 2,", "  pickup: \"2026-10-03\",", "  note: \"sliced, please\"", "}"] } },
+    { "name": "invalid", "kind": "parse", "sec": 9,
+      "input": ["{", "  \"item\": \"seed bagel\",", "  \"qty\": \"two\",", "  \"pickup\": \"next friday\"", "}"],
+      "checks": [ { "input": 1, "schema": 3, "ok": true }, { "input": 2, "schema": 4, "ok": false }, { "input": 3, "schema": 5, "ok": false }, { "input": -1, "schema": 6, "ok": true } ],
+      "result": { "ok": false, "pill": "success: false", "issues": [
+        { "code": "invalid_type", "path": "[\"qty\"]", "message": "Invalid input: expected number, received string" },
+        { "code": "invalid_format", "path": "[\"pickup\"]", "message": "Invalid ISO date" } ] } },
+    { "name": "outputs", "kind": "outputs", "sec": 8, "tiles": [1, 2] }
+  ]
+}

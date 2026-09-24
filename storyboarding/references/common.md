@@ -1,10 +1,13 @@
-# Shared fields and rules (all templates)
+# Shared fields and rules (free scenes and templates)
 
-Every storyboard is one JSON file:
+Every storyboard is one JSON file. A free scene names its drawing code, and a template names a bundled layout:
 
 ```json
+{ "scene": "scene.js", "meta": {…}, "shots": […] }
 { "template": "trace | router | cli | compare", "meta": {…}, "deciders": {…}, …template fields… }
 ```
+
+In a free scene, everything beyond `meta` (shots, data, labels) is yours to shape. See `kit.md`.
 
 ## Look and pace (fixed by the kit)
 

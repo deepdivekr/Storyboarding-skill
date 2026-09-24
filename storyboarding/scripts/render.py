@@ -2,7 +2,7 @@
 """Render a built storyboard HTML to MP4, GIF, or keyframe PNGs.
 
 usage:
-  python render.py storyboard.html --keyframes frames/   # a few PNGs per run for review
+  python render.py storyboard.html --keyframes frames/   # a few PNGs per run for review + layout check
   python render.py storyboard.html --mp4 out.mp4 [--fps 30]
   python render.py storyboard.html --gif out.gif [--gif-width 540]
 
@@ -26,6 +26,27 @@ def open_page(p, html):
     return b, pg
 
 
+def layout_issues(texts, W=1080, H=1350):
+    """Text drawn off the canvas, or two texts overlapping. Boxes are canvas px, in draw order."""
+    def inter(a, b):
+        return max(0, min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])) * max(0, min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"]))
+    # text painted over by a later opaque panel is hidden, not a problem
+    texts = [t for i, t in enumerate(texts) if not t.get("fill")
+             and not any(f.get("fill") and inter(t, f) > 0.8 * t["w"] * t["h"] for f in texts[i + 1:])]
+    out = []
+    for t in texts:
+        if abs(t["z"] - 1) < 0.01 and (t["x"] < -1 or t["y"] < -1 or t["x"] + t["w"] > W + 1 or t["y"] + t["h"] > H + 1):
+            out.append(f"off canvas: '{t['s']}' at ({t['x']:.0f},{t['y']:.0f})")
+    for i, a in enumerate(texts):
+        for b in texts[i + 1:]:
+            if a["z"] != b["z"] or (a["s"] == b["s"] and abs(a["x"] - b["x"]) < 1 and abs(a["y"] - b["y"]) < 1):
+                continue
+            small = min(a["w"] * a["h"], b["w"] * b["h"])
+            if small > 0 and inter(a, b) > 0.2 * small:
+                out.append(f"overlap: '{a['s']}' x '{b['s']}' at ({max(a['x'], b['x']):.0f},{max(a['y'], b['y']):.0f})")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("html")
@@ -46,11 +67,14 @@ def main():
         if a.keyframes:
             out = Path(a.keyframes); out.mkdir(parents=True, exist_ok=True)
             info = pg.evaluate("window.__info")
-            for k in range(info["n"]):
-                for name, r in info["keys"]:
-                    pg.evaluate(f"window.renderAt({k * info['len'] + r})")
-                    pg.screenshot(path=str(out / f"ep{k+1}_{name}.png"))
-            print(f"ok: {info['n'] * len(info['keys'])} keyframes in {out}/")
+            shots = info.get("times") or [(f"ep{k+1}_{name}", k * info["len"] + r) for k in range(info["n"]) for name, r in info["keys"]]
+            issues = 0
+            for name, t in shots:
+                pg.evaluate(f"window.renderAt({t})")
+                pg.screenshot(path=str(out / f"{name}.png"))
+                for m in layout_issues(pg.evaluate("window.__texts()")):
+                    print(f"  {name}: {m}"); issues += 1
+            print(f"ok: {len(shots)} keyframes in {out}/, layout issues: {issues}")
 
         if a.mp4 or a.gif:
             target = a.mp4 or str(Path(a.gif).with_suffix(".tmp.mp4"))

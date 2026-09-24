@@ -2,7 +2,8 @@
 """Validate a storyboard.json and build a self-contained HTML player.
 
 usage: python build.py storyboard.json -o out.html [--no-check]
-Exit code 1 means validation errors; fix the JSON and rerun.
+Exit code 1 means validation errors; fix the JSON (or scene.js) and rerun.
+A storyboard uses a bundled template ("template": "cli") or its own scene ("scene": "scene.js", next to the JSON).
 """
 import argparse, base64, json, re, sys
 from pathlib import Path
@@ -50,6 +51,43 @@ def refs_for(layout, page):
     elif layout == "terminal":
         r |= {f"line:{i}" for i in range(min(10, len(page.get("lines", []))))}
     return r
+
+
+# Scenes must be self-contained and deterministic: every frame is a pure function of t.
+SCENE_BANNED = {
+    r"\bfetch\s*\(|XMLHttpRequest|WebSocket|\bimport\s*\(|^\s*import\s": "no network or imports; the player is one offline file",
+    r"https?://": "no external URLs in code; put the repo URL in meta.footerLeft",
+    r"\beval\s*\(|new\s+Function": "no eval",
+    r"Math\.random|Date\.now|new\s+Date|performance\.now": "not deterministic; use rng(seed) and the t passed to draw",
+    r"localStorage|sessionStorage|document\.cookie": "no storage",
+    r"requestAnimationFrame|setTimeout|setInterval": "the kit drives frames; draw(t) only paints frame t",
+}
+
+
+def check_scene(sb, code):
+    errs, warns = [], []
+    meta = sb.get("meta", {})
+    if not meta.get("name"): errs.append("meta.name is required")
+    elif len(meta["name"]) > 22: errs.append(f"meta.name: '{meta['name']}' is {len(meta['name'])} chars, max 22")
+    for i, l in enumerate(meta.get("tagline", [])):
+        if len(l) > 74: errs.append(f"meta.tagline[{i}] is {len(l)} chars, max 74")
+    for pat, why in SCENE_BANNED.items():
+        m = re.search(pat, code, re.M)
+        if m: errs.append(f"scene: '{m.group(0).strip()}' — {why}")
+    if not re.search(r"\bboot\s*\(", code): errs.append("scene: must end with boot({ clock, count, prepare, draw, keys | times })")
+    if len(code) > 60000: warns.append(f"scene is {len(code)//1000} KB; templates are 7-25 KB, consider fewer parts")
+
+    def walk(o, path):
+        if isinstance(o, dict):
+            for k, v in o.items(): walk(v, f"{path}.{k}")
+        elif isinstance(o, list):
+            for i, v in enumerate(o): walk(v, f"{path}[{i}]")
+        elif isinstance(o, str) and EMAIL.search(o):
+            errs.append(f"{path}: looks like an email address ('{EMAIL.search(o).group(0)}'); use invented, non-address text")
+    walk(sb, "storyboard")
+    for m in EMAIL.finditer(code):
+        errs.append(f"scene: looks like an email address ('{m.group(0)}'); keep text in the JSON and invented")
+    return errs, warns
 
 
 def check(sb):
@@ -230,12 +268,13 @@ def check_other(sb, tpl):
 TEMPLATES = ("trace", "router", "cli", "compare")
 
 
-def build(sb, out):
+def build(sb, out, scene=None):
     tpl = sb.get("template", "trace")
     fonts = {k: base64.b64encode((ASSETS / "fonts" / f).read_bytes()).decode() for k, f in FONT_FILES.items()}
     html = (ASSETS / "engine.html").read_text()
     html = html.replace("/*__KIT__*/", (ASSETS / "kit.js").read_text())
-    html = html.replace("/*__TEMPLATE__*/", (ASSETS / "templates" / f"{tpl}.js").read_text())
+    code = scene if scene is not None else (ASSETS / "templates" / f"{tpl}.js").read_text()
+    html = html.replace("/*__TEMPLATE__*/", code)
     title = f"{sb.get('meta', {}).get('name', 'storyboard')} — storyboard"
     html = html.replace("__TITLE__", title.replace("<", "&lt;"))
     html = html.replace("__FONTS__", json.dumps(fonts))
@@ -250,14 +289,22 @@ def main():
     ap.add_argument("--no-check", action="store_true")
     a = ap.parse_args()
     sb = json.loads(Path(a.storyboard).read_text())
+    scene = None
+    if sb.get("scene"):
+        sp = Path(a.storyboard).resolve().parent / sb["scene"]
+        if not sp.is_file():
+            print(f"error: scene file {sp} not found"); sys.exit(1)
+        scene = sp.read_text()
     if not a.no_check:
-        errs, warns = check(sb)
+        errs, warns = check_scene(sb, scene) if scene is not None else check(sb)
         for m in warns: print("warn:", m)
         if errs:
             for m in errs: print("error:", m)
             print(f"\n{len(errs)} error(s). Fix the storyboard and rerun.")
             sys.exit(1)
-    build(sb, a.out)
+    build(sb, a.out, scene)
+    if scene is not None:
+        print(f"ok: {a.out}  (scene {sb['scene']})"); return
     tpl = sb.get("template", "trace")
     n = len(sb.get("runs") or sb.get("episodes", []))
     main = sb.get("meta", {}).get("runSeconds", 5.5 if tpl == "router" else 8.0)
