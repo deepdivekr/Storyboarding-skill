@@ -1,0 +1,260 @@
+{
+  "template": "cli",
+  "meta": {
+    "name": "schemashift",
+    "tagline": [
+      "Database migrations that plan first, back up before they touch data,",
+      "and prove the row counts afterwards."
+    ],
+    "headerRight": "postgres · mysql · sqlite",
+    "counterLabel": "session",
+    "counterStart": 57,
+    "shellTitle": "~/shop-api  zsh",
+    "surfaceLabel": "terminal",
+    "prompt": "$",
+    "changesTitle": "Changes",
+    "checksTitle": "Checks",
+    "metricsTitle": "This session",
+    "metrics": [
+      {
+        "key": "tables",
+        "label": "tables touched",
+        "sum": true
+      },
+      {
+        "key": "rows",
+        "label": "rows verified",
+        "unit": "k",
+        "sum": true,
+        "decimals": 0
+      },
+      {
+        "key": "lost",
+        "label": "rows lost",
+        "sum": true
+      },
+      {
+        "key": "secs",
+        "label": "wall time",
+        "unit": "s",
+        "decimals": 1
+      }
+    ],
+    "footerLeft": "github.com/example/schemashift",
+    "footerRight": "example storyboard  /  simulated",
+    "runSeconds": 8
+  },
+  "episodes": [
+    {
+      "command": "schemashift plan orders --to v42",
+      "lines": [
+        {
+          "text": "reading schema from shop_db",
+          "kind": "dim"
+        },
+        {
+          "text": "plan: orders v41 -> v42",
+          "kind": "head"
+        },
+        {
+          "text": "+ column shipped_at timestamptz"
+        },
+        {
+          "text": "+ index orders_shipped_at_idx"
+        },
+        {
+          "text": "~ column status: varchar(16) -> varchar(24)"
+        },
+        {
+          "text": "estimated lock: 0.4s, rows scanned: 1.2M"
+        },
+        {
+          "text": "plan written to migrations/042_orders.sql",
+          "kind": "ok"
+        }
+      ],
+      "files": [
+        {
+          "path": "migrations/042_orders.sql",
+          "change": "+",
+          "line": 6
+        },
+        {
+          "path": "schema/orders.lock",
+          "change": "~",
+          "line": 6
+        }
+      ],
+      "checks": [
+        {
+          "name": "plan is reversible",
+          "result": "pass"
+        },
+        {
+          "name": "no destructive ops",
+          "result": "pass"
+        },
+        {
+          "name": "lock under 1s",
+          "result": "pass",
+          "note": "0.4s"
+        }
+      ],
+      "metrics": {
+        "tables": 1,
+        "rows": 0,
+        "lost": 0,
+        "secs": 1.2
+      },
+      "result": "planned",
+      "duration": "1.2s",
+      "toast": "plan ready, nothing applied"
+    },
+    {
+      "command": "schemashift apply orders --backup",
+      "lines": [
+        {
+          "text": "backup orders -> .snapshots/orders_0924.dump",
+          "kind": "progress",
+          "done": "saved"
+        },
+        {
+          "text": "applying 042_orders.sql",
+          "kind": "head"
+        },
+        {
+          "text": "ALTER TABLE orders ADD COLUMN shipped_at",
+          "kind": "dim"
+        },
+        {
+          "text": "CREATE INDEX CONCURRENTLY orders_shipped_at_idx",
+          "kind": "progress",
+          "done": "built"
+        },
+        {
+          "text": "ALTER COLUMN status TYPE varchar(24)",
+          "kind": "dim"
+        },
+        {
+          "text": "counting rows before and after",
+          "kind": "progress",
+          "done": "1.2M = 1.2M"
+        },
+        {
+          "text": "applied v42 in 6.8s",
+          "kind": "ok"
+        }
+      ],
+      "files": [
+        {
+          "path": ".snapshots/orders_0924.dump",
+          "change": "+",
+          "line": 0
+        },
+        {
+          "path": "schema/orders.lock",
+          "change": "~",
+          "line": 6
+        },
+        {
+          "path": "migrations/applied.log",
+          "change": "~",
+          "line": 6
+        }
+      ],
+      "checks": [
+        {
+          "name": "backup restorable",
+          "result": "pass"
+        },
+        {
+          "name": "row count matches",
+          "result": "pass",
+          "note": "1.2M"
+        },
+        {
+          "name": "index valid",
+          "result": "pass"
+        },
+        {
+          "name": "app queries replayed",
+          "result": "pass",
+          "note": "48/48"
+        }
+      ],
+      "metrics": {
+        "tables": 1,
+        "rows": 1204,
+        "lost": 0,
+        "secs": 6.8
+      },
+      "result": "applied",
+      "duration": "6.8s",
+      "toast": "v42 live, 0 rows lost"
+    },
+    {
+      "command": "schemashift apply customers --backup",
+      "lines": [
+        {
+          "text": "backup customers -> .snapshots/customers_0924.dump",
+          "kind": "progress",
+          "done": "saved"
+        },
+        {
+          "text": "applying 043_customers.sql",
+          "kind": "head"
+        },
+        {
+          "text": "DROP COLUMN legacy_code requested",
+          "kind": "warn"
+        },
+        {
+          "text": "column still read by 2 queries in app/",
+          "kind": "warn"
+        },
+        {
+          "text": "stopped before any change, nothing applied",
+          "kind": "err"
+        }
+      ],
+      "files": [
+        {
+          "path": ".snapshots/customers_0924.dump",
+          "change": "+",
+          "line": 0
+        },
+        {
+          "path": "reports/043_blocked.md",
+          "change": "+",
+          "line": 4
+        }
+      ],
+      "checks": [
+        {
+          "name": "backup restorable",
+          "result": "pass"
+        },
+        {
+          "name": "column unused in code",
+          "result": "fail",
+          "note": "2 refs"
+        },
+        {
+          "name": "apply",
+          "result": "skip",
+          "note": "blocked"
+        }
+      ],
+      "metrics": {
+        "tables": 0,
+        "rows": 0,
+        "lost": 0,
+        "secs": 2.1
+      },
+      "result": "blocked, 2 warnings",
+      "duration": "2.1s",
+      "toast": "blocked, see reports/043_blocked.md",
+      "toastColor": "human"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "template": "router",
+  "meta": {
+    "name": "payroute",
+    "tagline": ["Routes each payment to the processor most likely to approve it,", "with rules first, a model second, and a retry queue last."],
+    "headerRight": "self-hosted, one API",
+    "counterLabel": "payment", "counterStart": 2081,
+    "source": { "title": "checkout", "note": "one integration" },
+    "core": { "title": "POST /v1/charges", "note": "amount · currency · card bin" },
+    "sink": { "title": "LEDGER", "note": "one record" },
+    "decisionLabel": "route by",
+    "rateUnit": "/s",
+    "panelTitle": "Routing telemetry",
+    "mapTitle": "Route map", "mapNote": "one call, six processors",
+    "statsTitle": "Today", "statsNote": "all processors",
+    "liveStat": { "label": "CHARGES ROUTED", "start": 18422 },
+    "stats": [["APPROVAL RATE", "96.4%"], ["P50 ROUTE TIME", "11ms"], ["RETRIES SAVED", "212"]],
+    "logTitle": "Event log", "logNote": "last five charges",
+    "panelFooter": "RULES FIRST · MODEL SECOND · RETRY LAST",
+    "panelBadge": "SELF-HOSTED",
+    "footerLeft": "github.com/example/payroute",
+    "footerRight": "example storyboard  /  simulated",
+    "runSeconds": 5.5
+  },
+  "deciders": {
+    "rule":  { "label": "rule",  "color": "cool" },
+    "model": { "label": "model", "color": "acc" },
+    "retry": { "label": "retry", "color": "alt" }
+  },
+  "lanes": [
+    { "name": "card.global",   "note": "streaming", "rate": 84 },
+    { "name": "card.local",    "note": "streaming", "rate": 61 },
+    { "name": "bank.transfer", "note": "batch 5m",  "rate": 22 },
+    { "name": "wallet.pay",    "note": "streaming", "rate": 47 },
+    { "name": "fx.cross",      "note": "quoted",    "rate": 18 },
+    { "name": "retry.queue",   "note": "idle",      "rate": 9 }
+  ],
+  "episodes": [
+    { "client": "shop-web", "request": "charge 48,900 KRW, local debit card, bin 9410", "lane": 1, "decider": "rule", "field": "card.bin", "score": "exact", "reason": "domestic bin table", "status": "approved 212ms", "log": { "id": "ch_7a01", "text": "approved, 212ms" } },
+    { "client": "app-ios", "request": "charge 129 USD, card issued abroad, first purchase", "lane": 4, "decider": "model", "field": "approval odds", "score": "0.91", "reason": "fx.cross beats card.global", "status": "approved 390ms", "log": { "id": "ch_7a02", "text": "approved, fx quoted" } },
+    { "client": "shop-web", "request": "charge 18,000 KRW with the saved wallet", "lane": 3, "decider": "rule", "field": "method", "score": "wallet", "reason": "token on file", "status": "approved 140ms", "log": { "id": "ch_7a03", "text": "approved, 140ms" } },
+    { "client": "pos-12", "request": "charge 72,500 KRW, processor A timed out", "lane": 5, "decider": "retry", "field": "last error", "score": "timeout", "reason": "queue for card.local", "status": "1 queued, retry 30s", "log": { "id": "ch_7a04", "text": "queued, retry in 30s" } }
+  ]
+}

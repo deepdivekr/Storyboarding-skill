@@ -1,0 +1,77 @@
+{
+  "template": "compare",
+  "meta": {
+    "name": "keyrot",
+    "tagline": ["Rotates API keys across every service that uses them,", "then proves the old key is dead and nothing broke."],
+    "headerRight": "cli + ci action",
+    "counterLabel": "rotation", "counterStart": 311,
+    "before": { "title": "by hand", "short": "by hand", "note": "wiki runbook v7" },
+    "after": { "title": "with keyrot", "short": "keyrot", "note": "one command" },
+    "metricsTitle": "Difference", "savedLabel": "saved so far",
+    "footerLeft": "github.com/example/keyrot",
+    "footerRight": "example storyboard  /  simulated",
+    "runSeconds": 8
+  },
+  "episodes": [
+    {
+      "client": "ops", "request": "rotate the billing API key used by 3 services",
+      "before": { "total": "2h 10m", "steps": [
+        { "text": "find every service using the key", "dur": "25m" },
+        { "text": "create new key in provider console", "dur": "5m" },
+        { "text": "update secret in 3 deploy configs", "dur": "20m" },
+        { "text": "redeploy services one by one", "dur": "35m" },
+        { "text": "worker still on old key", "dur": "15m", "flag": "err", "note": "missed in step 1" },
+        { "text": "revoke old key", "dur": "5m" },
+        { "text": "watch error dashboards", "dur": "25m" } ],
+        "result": "done, 1 incident logged", "resultColor": "human" },
+      "after": { "command": "keyrot rotate billing", "total": "3m 40s", "steps": [
+        { "text": "scan: 3 services, 1 worker", "dur": "8s" },
+        { "text": "issue new key, stage secrets", "dur": "20s" },
+        { "text": "rolling restart, health checks", "dur": "2m 30s" },
+        { "text": "old key revoked, 0 calls seen", "dur": "40s" } ],
+        "result": "old key dead, 0 errors" },
+      "metrics": [
+        { "label": "time", "before": 130, "after": 3.7, "unit": "m" },
+        { "label": "manual steps", "before": 7, "after": 1 },
+        { "label": "services missed", "before": 1, "after": 0 } ]
+    },
+    {
+      "client": "ci", "request": "rotate all keys older than 90 days, 11 keys",
+      "before": { "total": "1d 2h", "steps": [
+        { "text": "export key ages from 4 consoles", "dur": "1h" },
+        { "text": "map keys to owners in a sheet", "dur": "2h" },
+        { "text": "schedule rotations with 6 teams", "dur": "8h" },
+        { "text": "rotate and redeploy, per team", "dur": "12h" },
+        { "text": "2 teams postpone to next sprint", "dur": "2h", "flag": "err", "note": "still exposed" },
+        { "text": "audit what actually changed", "dur": "1h" } ],
+        "result": "9 of 11 rotated", "resultColor": "human" },
+      "after": { "command": "keyrot rotate --older-than 90d", "total": "14m", "steps": [
+        { "text": "11 keys found across 4 providers", "dur": "30s" },
+        { "text": "owners notified, windows set", "dur": "1m" },
+        { "text": "rotate in dependency order", "dur": "10m" },
+        { "text": "audit log written", "dur": "2m" } ],
+        "result": "11 of 11 rotated, audit saved" },
+      "metrics": [
+        { "label": "time", "before": 26, "after": 0.23, "unit": "h", "decimals": 1 },
+        { "label": "keys rotated", "before": 9, "after": 11 },
+        { "label": "people involved", "before": 8, "after": 1 } ]
+    },
+    {
+      "client": "ops", "request": "leaked key in a public repo, rotate now",
+      "before": { "total": "48m", "steps": [
+        { "text": "confirm which key leaked", "dur": "10m" },
+        { "text": "revoke in console", "dur": "3m" },
+        { "text": "checkout service down", "dur": "20m", "flag": "err", "note": "revoked before replacing" },
+        { "text": "issue new key, redeploy", "dur": "15m" } ],
+        "result": "20 min outage", "resultColor": "human" },
+      "after": { "command": "keyrot rotate --emergency sk_live_…9f2", "total": "90s", "steps": [
+        { "text": "new key staged everywhere first", "dur": "40s" },
+        { "text": "old key revoked after cutover", "dur": "20s" },
+        { "text": "leak scan: 0 calls with old key", "dur": "30s" } ],
+        "result": "no downtime, leak closed" },
+      "metrics": [
+        { "label": "time", "before": 48, "after": 1.5, "unit": "m" },
+        { "label": "downtime", "before": 20, "after": 0, "unit": "m" } ]
+    }
+  ]
+}

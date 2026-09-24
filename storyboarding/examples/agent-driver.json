@@ -1,0 +1,665 @@
+{
+  "template": "trace",
+  "meta": {
+    "name": "agent-driver",
+    "tagline": [
+      "A local MCP server that drives a browser, CLI and files for your agent,",
+      "and stops for you before anything leaves the machine."
+    ],
+    "headerRight": "stdio, no cloud relay",
+    "stages": [
+      "plan",
+      "observe",
+      "judge",
+      "gate",
+      "execute",
+      "readback",
+      "recipe"
+    ],
+    "railTitle": "run trace",
+    "surfaceLabel": "agent-owned browser",
+    "packLabel": "pack",
+    "packsTitle": "Verified runs become recipes",
+    "packsTotal": "{n} recipes across {k} pack families",
+    "gate": 0.8,
+    "footerLeft": "github.com/deepdivekr/agent-driver",
+    "footerRight": "v0.1.0-alpha.16  /  simulated runs  /  @DeepDive_kr",
+    "introSeconds": 2.3,
+    "runSeconds": 8.0,
+    "counterLabel": "run",
+    "counterStart": 412,
+    "urlBadge": "allowlisted"
+  },
+  "deciders": {
+    "jev": {
+      "label": "jev",
+      "color": "#F5A524"
+    },
+    "llm": {
+      "label": "llm",
+      "color": "#A99BE0",
+      "pick": "llm pick"
+    },
+    "code": {
+      "label": "code",
+      "color": "#6FA8DC"
+    }
+  },
+  "packs": [
+    {
+      "name": "research.search",
+      "note": "read-only",
+      "count": 9
+    },
+    {
+      "name": "portal.collect",
+      "note": "read + local file",
+      "count": 12
+    },
+    {
+      "name": "form.draft-submit",
+      "note": "submit needs approval",
+      "count": 5
+    },
+    {
+      "name": "record.update",
+      "note": "snapshot + readback",
+      "count": 7
+    },
+    {
+      "name": "choose.stage",
+      "note": "stage only, no checkout",
+      "count": 3
+    },
+    {
+      "name": "inbox.triage",
+      "note": "no send, no delete",
+      "count": 11
+    },
+    {
+      "name": "monitor.watch",
+      "note": "local events",
+      "count": 20
+    },
+    {
+      "name": "file.pipeline",
+      "note": "source preserved",
+      "count": 14
+    }
+  ],
+  "runs": [
+    {
+      "client": "hermes",
+      "request": "export September settlements as CSV from the vendor portal",
+      "pack": 1,
+      "decider": "jev",
+      "layout": "table",
+      "url": "portal.vendor.example/settlements",
+      "page": {
+        "nav": [
+          "Dashboard",
+          "Settlements",
+          "Invoices",
+          "Help"
+        ],
+        "navActive": 1,
+        "heading": "Settlements, Sep 2026",
+        "toolbar": [
+          {
+            "label": "Filter",
+            "align": "left"
+          },
+          {
+            "label": "Print"
+          },
+          {
+            "label": "Export CSV",
+            "primary": true
+          }
+        ],
+        "columns": [
+          {
+            "name": "date"
+          },
+          {
+            "name": "vendor"
+          },
+          {
+            "name": "amount",
+            "align": "right"
+          },
+          {
+            "name": "status"
+          }
+        ],
+        "rows": [
+          [
+            "09-02",
+            "Andes Green Co.",
+            "4,820,000",
+            "paid"
+          ],
+          [
+            "09-05",
+            "Kiri Packaging",
+            "1,275,500",
+            "paid"
+          ],
+          [
+            "09-09",
+            "Brightcup Imports",
+            "3,040,000",
+            "pending"
+          ],
+          [
+            "09-12",
+            "Hollow Mill",
+            "2,118,000",
+            "paid"
+          ],
+          [
+            "09-18",
+            "Ferro Freight",
+            "896,400",
+            "paid"
+          ],
+          [
+            "09-23",
+            "Andes Green Co.",
+            "4,610,000",
+            "pending"
+          ]
+        ],
+        "cellColors": {
+          "paid": "ok",
+          "pending": "warn"
+        }
+      },
+      "candidates": [
+        {
+          "ref": "nav:1",
+          "role": "link",
+          "label": "Settlements",
+          "p": 0.31
+        },
+        {
+          "ref": "nav:3",
+          "role": "link",
+          "label": "Help",
+          "p": 0.03
+        },
+        {
+          "ref": "tool:0",
+          "role": "button",
+          "label": "Filter",
+          "p": 0.12
+        },
+        {
+          "ref": "tool:1",
+          "role": "button",
+          "label": "Print",
+          "p": 0.22
+        },
+        {
+          "ref": "tool:2",
+          "role": "button",
+          "label": "Export CSV",
+          "p": 0.94,
+          "win": true
+        }
+      ],
+      "steps": [
+        [
+          "portal.collect, read + local file",
+          "llm 1.1s"
+        ],
+        [
+          "6 rows loaded, 5 candidates",
+          "410ms"
+        ],
+        [
+          "jev 0.94 on e5, passes gate",
+          "233ms"
+        ],
+        [
+          "read-only, no approval needed",
+          "0ms"
+        ],
+        [
+          "click e5, exact locator",
+          "180ms"
+        ],
+        [
+          "csv has 38 rows, schema ok",
+          "95ms"
+        ],
+        [
+          "saved as portal.collect #13",
+          "8ms"
+        ]
+      ],
+      "gatePill": "read-only, gate passes",
+      "verdict": "jev 0.94 clears the 0.80 gate",
+      "toast": "settlements_2026-09.csv, 38 rows"
+    },
+    {
+      "client": "codex",
+      "request": "fill the supplier registration draft, ask me before submit",
+      "pack": 2,
+      "decider": "llm",
+      "layout": "form",
+      "url": "suppliers.example/register",
+      "page": {
+        "site": "suppliers.example",
+        "heading": "Supplier registration",
+        "fields": [
+          [
+            "Company",
+            "Bluepeak Roasters"
+          ],
+          [
+            "Biz reg no.",
+            "123-45-67890"
+          ],
+          [
+            "Category",
+            "Coffee wholesale"
+          ]
+        ],
+        "buttons": [
+          "Save draft",
+          "Submit"
+        ],
+        "note": "draft saved 2 min ago, 9 fields"
+      },
+      "candidates": [
+        {
+          "ref": "field:0",
+          "role": "input",
+          "label": "Company",
+          "p": 0.18
+        },
+        {
+          "ref": "field:1",
+          "role": "input",
+          "label": "Biz reg no.",
+          "p": 0.09
+        },
+        {
+          "ref": "field:2",
+          "role": "select",
+          "label": "Category",
+          "p": 0.11
+        },
+        {
+          "ref": "btn:0",
+          "role": "button",
+          "label": "Save draft",
+          "p": 0.47
+        },
+        {
+          "ref": "btn:1",
+          "role": "button",
+          "label": "Submit",
+          "p": 0.52,
+          "win": true
+        }
+      ],
+      "steps": [
+        [
+          "form.draft-submit, submit gated",
+          "llm 1.3s"
+        ],
+        [
+          "3 fields filled, 5 candidates",
+          "380ms"
+        ],
+        [
+          "jev 0.52 < gate, llm decides",
+          "1.4s"
+        ],
+        [
+          "snapshot 7f3a91, waiting",
+          "human"
+        ],
+        [
+          "click e5, approval token ok",
+          "210ms"
+        ],
+        [
+          "SUP-0931, 9/9 fields match",
+          "120ms"
+        ],
+        [
+          "saved as form.draft-submit #6",
+          "9ms"
+        ]
+      ],
+      "approval": {
+        "title": "submit supplier registration",
+        "detail": "snapshot 7f3a91, 9 fields, expires 5m",
+        "button": "approve once",
+        "done": "approved",
+        "via": "via Telegram",
+        "railWaiting": "snapshot 7f3a91, waiting for you",
+        "railDone": "snapshot 7f3a91, approved once"
+      },
+      "verdict": "all below the 0.80 gate, llm structures the state",
+      "toast": "SUP-0931 created, 9/9 match"
+    },
+    {
+      "client": "claude code",
+      "request": "watch item 20417 and tell me when the price changes",
+      "pack": 6,
+      "decider": "code",
+      "layout": "product",
+      "url": "shop.example/item/20417",
+      "page": {
+        "image": "bag",
+        "title": "Item 20417",
+        "subtitle": "Ethiopia Guji, 1kg whole bean",
+        "price": "KRW 46,500",
+        "priceAfter": "KRW 48,900",
+        "priceBefore": "was 46,500",
+        "stock": "In stock, ships in 2 days",
+        "buttons": [
+          "Add to cart",
+          "Wishlist"
+        ],
+        "link": "Reviews (212)"
+      },
+      "scoreLabel": "p",
+      "candidates": [
+        {
+          "ref": "price",
+          "role": "text",
+          "label": "Price",
+          "p": 1.0,
+          "win": true
+        },
+        {
+          "ref": "stock",
+          "role": "text",
+          "label": "Stock",
+          "p": null
+        },
+        {
+          "ref": "btn:0",
+          "role": "button",
+          "label": "Add to cart",
+          "p": null
+        },
+        {
+          "ref": "btn:1",
+          "role": "button",
+          "label": "Wishlist",
+          "p": null
+        },
+        {
+          "ref": "link",
+          "role": "link",
+          "label": "Reviews",
+          "p": null
+        }
+      ],
+      "steps": [
+        [
+          "monitor.watch, local events",
+          "llm 0.9s"
+        ],
+        [
+          "item page loaded, 1 selector",
+          "350ms"
+        ],
+        [
+          "code, exact selector",
+          "2ms"
+        ],
+        [
+          "read-only, no approval needed",
+          "0ms"
+        ],
+        [
+          "re-read e1",
+          "60ms"
+        ],
+        [
+          "46,500 to 48,900, deduped",
+          "40ms"
+        ],
+        [
+          "saved as monitor.watch #21",
+          "7ms"
+        ]
+      ],
+      "gatePill": "read-only, gate passes",
+      "verdict": "known selector, no model call",
+      "toast": "change event, deduped"
+    },
+    {
+      "client": "hermes",
+      "request": "compare green coffee importers by 2026 price with sources",
+      "pack": 0,
+      "decider": "jev",
+      "layout": "list",
+      "url": "search.example/?q=green+coffee+importer",
+      "page": {
+        "query": "green coffee importer 2026",
+        "items": [
+          {
+            "title": "Andes Green price list 2026",
+            "meta": "andes-green.example",
+            "sub": "Washed and natural lots per kg"
+          },
+          {
+            "title": "Top 10 home brewing tips",
+            "meta": "blog.example",
+            "sub": "Grind size and water for pour-over"
+          },
+          {
+            "title": "Brightcup wholesale lots",
+            "meta": "brightcup.example",
+            "sub": "Specialty lot pricing, 2026 harvest"
+          },
+          {
+            "title": "Should you roast at home?",
+            "meta": "guide.example",
+            "sub": "Home roasting vs buying roasted"
+          },
+          {
+            "title": "Kiri Origins catalog",
+            "meta": "kiri-origins.example",
+            "sub": "Lot prices, cupping scores, MOQ"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "ref": "item:0",
+          "role": "result",
+          "label": "Andes prices",
+          "p": 0.91,
+          "win": true
+        },
+        {
+          "ref": "item:1",
+          "role": "result",
+          "label": "Brewing tips",
+          "p": 0.34
+        },
+        {
+          "ref": "item:2",
+          "role": "result",
+          "label": "Brightcup lots",
+          "p": 0.88,
+          "win": true
+        },
+        {
+          "ref": "item:3",
+          "role": "result",
+          "label": "Home roasting",
+          "p": 0.22
+        },
+        {
+          "ref": "item:4",
+          "role": "result",
+          "label": "Kiri catalog",
+          "p": 0.84,
+          "win": true
+        }
+      ],
+      "steps": [
+        [
+          "research.search, read-only",
+          "llm 1.0s"
+        ],
+        [
+          "5 results, 5 candidates",
+          "390ms"
+        ],
+        [
+          "jev relevance, 3 clear gate",
+          "241ms"
+        ],
+        [
+          "read-only, no approval needed",
+          "0ms"
+        ],
+        [
+          "open e1, e3, e5",
+          "1.2s"
+        ],
+        [
+          "3 sources read, prices cited",
+          "140ms"
+        ],
+        [
+          "saved as research.search #10",
+          "8ms"
+        ]
+      ],
+      "gatePill": "read-only, gate passes",
+      "verdict": "three sources clear the gate, ranked by relevance",
+      "toast": "3 sources read, prices cited"
+    },
+    {
+      "client": "codex",
+      "request": "sort today's supplier emails, draft replies, don't send",
+      "pack": 5,
+      "decider": "jev",
+      "layout": "list",
+      "url": "mail.example/inbox",
+      "page": {
+        "sidebar": [
+          [
+            "Inbox",
+            "5"
+          ],
+          [
+            "Drafts",
+            ""
+          ],
+          [
+            "Sent",
+            ""
+          ]
+        ],
+        "items": [
+          {
+            "title": "Andes Green Co.",
+            "sub": "Invoice #4471 for September",
+            "time": "09:12"
+          },
+          {
+            "title": "newsletter",
+            "sub": "Weekly industry digest",
+            "time": "08:40"
+          },
+          {
+            "title": "Kiri Packaging",
+            "sub": "Delivery date change request",
+            "time": "08:15"
+          },
+          {
+            "title": "Bank alerts",
+            "sub": "Statement available",
+            "time": "07:58"
+          },
+          {
+            "title": "Hollow Mill",
+            "sub": "Roaster maintenance schedule",
+            "time": "07:30"
+          }
+        ]
+      },
+      "candidates": [
+        {
+          "ref": "item:0",
+          "role": "mail",
+          "label": "Invoice #4471",
+          "p": 0.87,
+          "win": true
+        },
+        {
+          "ref": "item:1",
+          "role": "mail",
+          "label": "Industry digest",
+          "p": 0.06
+        },
+        {
+          "ref": "item:2",
+          "role": "mail",
+          "label": "Delivery change",
+          "p": 0.82,
+          "win": true
+        },
+        {
+          "ref": "item:3",
+          "role": "mail",
+          "label": "Statement",
+          "p": 0.04
+        },
+        {
+          "ref": "item:4",
+          "role": "mail",
+          "label": "Roaster service",
+          "p": 0.61
+        }
+      ],
+      "steps": [
+        [
+          "inbox.triage, no send",
+          "llm 0.8s"
+        ],
+        [
+          "5 messages, 5 candidates",
+          "300ms"
+        ],
+        [
+          "jev needs-reply, 2 clear gate",
+          "236ms"
+        ],
+        [
+          "drafts only, no send",
+          "0ms"
+        ],
+        [
+          "draft replies for e1, e3",
+          "2.1s"
+        ],
+        [
+          "2 drafts saved, 0 sent",
+          "60ms"
+        ],
+        [
+          "saved as inbox.triage #12",
+          "8ms"
+        ]
+      ],
+      "gatePill": "drafts only, gate passes",
+      "winMark": "draft",
+      "verdict": "e5 at 0.61 stays below the gate and goes to you",
+      "toast": "2 drafts saved, 0 sent"
+    }
+  ]
+}
